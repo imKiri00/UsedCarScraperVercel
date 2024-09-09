@@ -23,7 +23,7 @@ async def scrape():
         start_time = time.time()
         logger.info("=== SCRAPE FUNCTION STARTED ===")
         total_new_posts = 0
-        for a in range(1, 11):
+        for a in range(1, 10):
             url = f"https://www.polovniautomobili.com/auto-oglasi/pretraga?page={a}&sort=basic&brand=alfa-romeo&city_distance=0&showOldNew=all&without_price=1"
             try:
                 logger.info(f"Processing page {a}/10")
@@ -53,7 +53,7 @@ async def scrape():
         logger.error(stack_trace)
         return {"error": "An unexpected error occurred during the scraping process. Please check the logs for more details."}
     
-    
+
 @app.get("/api/health")
 async def health_check():
     logger.info("Health check endpoint called")
