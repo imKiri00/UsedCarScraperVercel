@@ -16,11 +16,11 @@ jobs:
         status_code=$(echo "$response" | tail -n1)
         body=$(echo "$response" | sed '$d')
         echo "Status code: $status_code"
-        echo "Response body: $body"
+        echo -e "Response body:\n$body"
         if [ $status_code -eq 200 ]; then
           echo "Scrape function executed successfully"
         else
           echo "Scrape function failed with status code: $status_code"
-          echo "Error details: $body"
+          echo -e "Error details:\n$body"
           exit 1
         fi
