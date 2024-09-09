@@ -70,7 +70,7 @@ def save_to_firestore(posts):
                         # Send email notification for new post
                         subject = 'Novi Auto PolovniAutomobili'
                         to_email = os.getenv("NOTIFICATION_EMAIL")  # Email to receive notifications
-                        send_email_notification(subject, post, to_email)
+                        #send_email_notification(subject, post, to_email)
             elif isinstance(post, str):
                 logger.warning(f"Skipping string post: {post[:100]}...")  # Log first 100 chars
             else:
