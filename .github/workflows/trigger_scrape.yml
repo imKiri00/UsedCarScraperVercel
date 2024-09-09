@@ -1,0 +1,21 @@
+name: Trigger Scrape Function
+
+on:
+  push:
+    branches: [ main ] 
+  schedule:
+    - cron: '*/30 * * * *'
+
+jobs:
+  trigger_scrape:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Curl request
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" https://used-car-scraper-vercel.vercel.app/api/scrape)
+        if [ $response -eq 200 ]; then
+          echo "Scrape function executed successfully"
+        else
+          echo "Scrape function failed with status code: $response"
+          exit 1
+        fi
