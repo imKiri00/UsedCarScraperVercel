@@ -1,66 +1,70 @@
-from fastapi import FastAPI, HTTPException
-from firebase_admin import firestore
-from api.firebase_init import db
-import logging
-import httpx
 import os
-import hashlib
+import firebase_admin
+from firebase_admin import credentials, firestore
+import logging
 from dotenv import load_dotenv
-
-app = FastAPI()
+from fastapi import FastAPI, HTTPException
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
 
-EMAIL_SERVICE_URL = "http://localhost:8003"
+app = FastAPI()
+
+def initialize_firebase():
+    try:
+        if not firebase_admin._apps:
+            cred_dict = {
+                "type": os.getenv("FIREBASE_TYPE"),
+                "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+                "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+                "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace("\\n", "\n"),
+                "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+                "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+                "auth_uri": os.getenv("FIREBASE_AUTH_URI"),
+                "token_uri": os.getenv("FIREBASE_TOKEN_URI"),
+                "auth_provider_x509_cert_url": os.getenv("FIREBASE_AUTH_PROVIDER_X509_CERT_URL"),
+                "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL"),
+                "universe_domain": os.getenv("FIREBASE_UNIVERSE_DOMAIN")
+            }
+           
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+       
+        db = firestore.client()
+        logger.info("Firebase initialized successfully")
+        return db
+    except Exception as e:
+        logger.error(f"Failed to initialize Firebase: {str(e)}")
+        raise
+
+# Initialize Firebase when this module is imported
+db = initialize_firebase()
 
 @app.post("/save")
-async def save_to_firestore(posts: list):
+async def save_data(data: dict):
     try:
-        new_posts = []
-        for post in posts:
-            if isinstance(post, dict):
-                post_link = post.get('post_link')
-                if post_link:
-                    # Create a hash of the post_link to use as the document ID
-                    doc_id = hashlib.md5(post_link.encode()).hexdigest()
-                    doc_ref = db.collection('posts').document(doc_id)
-                    doc = doc_ref.get()
-                    if not doc.exists:
-                        doc_ref.set(post)
-                        new_posts.append(post)
-                        # Send email notification for new post
-                        await send_email_notification(post)
-            elif isinstance(post, str):
-                logger.warning(f"Skipping string post: {post[:100]}...")  # Log first 100 chars
-            else:
-                logger.warning(f"Unexpected post type: {type(post)}")
-        
-        logger.info(f"Saved {len(new_posts)} new posts to Firestore")
-        return {"message": f"Successfully saved {len(new_posts)} new posts to Firestore"}
+        # Your logic to save data to Firebase
+        # For example:
+        doc_ref = db.collection('your_collection').document()
+        doc_ref.set(data)
+        return {"message": "Data saved successfully"}
     except Exception as e:
-        logger.error(f"Error saving to Firestore: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error saving to Firestore: {str(e)}")
+        logger.error(f"Failed to save data: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-async def send_email_notification(post):
-    subject = 'Novi Auto PolovniAutomobili'
-    to_email = os.getenv("NOTIFICATION_EMAIL")  # Email to receive notifications
-    
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(f"{EMAIL_SERVICE_URL}/send_email", json={
-                "subject": subject,
-                "car_info": post,
-                "to_email": to_email
-            })
-            response.raise_for_status()
-            logger.info(f"Email notification sent for post: {post.get('post_link')}")
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to send email notification: {str(e)}")
+@app.get("/health")
+async def health_check():
+    try:
+        # Perform a simple read operation to check if Firebase is accessible
+        db.collection('health_check').document('test').get()
+        return {"status": "healthy", "message": "Firebase connection is working"}
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Firebase connection is not working")
 
 if __name__ == "__main__":
     import uvicorn
