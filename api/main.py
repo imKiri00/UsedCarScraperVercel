@@ -5,7 +5,7 @@ import traceback
 from dotenv import load_dotenv
 from firebase_admin import firestore
 from api.firebase_init import db
-from api.scraper import extract_posts
+from api.scraper import extract_car_info
 from api.database import save_to_firestore
 
 # Set up logging
@@ -19,20 +19,25 @@ app = FastAPI()
 
 @app.get("/api/scrape")
 async def scrape():
-    url = "http://www.phpbb.com/community/viewtopic.php?f=46&t=2159437"
-    try:
-        logger.info("Starting scrape function")
-        extracted_posts = extract_posts(url)
-        logger.info(f"Extracted {len(extracted_posts)} posts")
-        new_posts = save_to_firestore(extracted_posts)
-        logger.info(f"Saved {len(new_posts)} new posts to Firestore")
-        return {"message": f"Successfully processed {len(new_posts)} new posts."}
-    except Exception as e:
-        error_msg = f"Error in scrape function: {str(e)}"
-        stack_trace = traceback.format_exc()
-        logger.error(error_msg)
-        logger.error(stack_trace)
-        return {"error": error_msg, "traceback": stack_trace}, 500
+    total_new_posts = 0
+    for a in range(1, 11):
+        url = f"https://www.polovniautomobili.com/auto-oglasi/pretraga?page={a}&sort=basic&brand=alfa-romeo&city_distance=0&showOldNew=all&without_price=1"
+        try:
+            logger.info(f"Starting scrape function for page {a}")
+            extracted_posts = extract_car_info(url)
+            logger.info(f"Extracted {len(extracted_posts)} posts from page {a}")
+            new_posts = save_to_firestore(extracted_posts)
+            logger.info(f"Saved {len(new_posts)} new posts to Firestore from page {a}")
+            total_new_posts += len(new_posts)
+        except Exception as e:
+            error_msg = f"Error in scrape function for page {a}: {str(e)}"
+            stack_trace = traceback.format_exc()
+            logger.error(error_msg)
+            logger.error(stack_trace)
+            # Continue to the next iteration instead of returning immediately
+            continue
+    
+    return {"message": f"Successfully processed {total_new_posts} new posts across 10 pages."}
 
 @app.get("/api/health")
 async def health_check():
