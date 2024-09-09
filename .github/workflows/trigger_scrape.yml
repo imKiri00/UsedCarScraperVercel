@@ -1,4 +1,4 @@
-name: Trigger Scrape Function
+name: Trigger Scrape Function Chain
 
 on:
   push:
@@ -7,20 +7,191 @@ on:
     - cron: '*/30 * * * *'
 
 jobs:
-  trigger_scrape:
+  scrape_page_1:
     runs-on: ubuntu-latest
     steps:
-    - name: Curl request
+    - name: Scrape Page 1
       run: |
-        response=$(curl -s -w "\n%{http_code}" https://used-car-scraper-vercel.vercel.app/api/scrape)
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=1")
         status_code=$(echo "$response" | tail -n1)
         body=$(echo "$response" | sed '$d')
         echo "Status code: $status_code"
         echo -e "Response body:\n$body"
         if [ $status_code -eq 200 ]; then
-          echo "Scrape function executed successfully"
+          echo "Scrape function for page 1 executed successfully"
         else
-          echo "Scrape function failed with status code: $status_code"
+          echo "Scrape function for page 1 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_2:
+    needs: scrape_page_1
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 2
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=2")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 2 executed successfully"
+        else
+          echo "Scrape function for page 2 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_3:
+    needs: scrape_page_2
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 3
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=3")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 3 executed successfully"
+        else
+          echo "Scrape function for page 3 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_4:
+    needs: scrape_page_3
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 4
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=4")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 4 executed successfully"
+        else
+          echo "Scrape function for page 4 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_5:
+    needs: scrape_page_4
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 5
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=5")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 5 executed successfully"
+        else
+          echo "Scrape function for page 5 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_6:
+    needs: scrape_page_5
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 6
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=6")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 6 executed successfully"
+        else
+          echo "Scrape function for page 6 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_7:
+    needs: scrape_page_6
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 7
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=7")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 7 executed successfully"
+        else
+          echo "Scrape function for page 7 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_8:
+    needs: scrape_page_7
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 8
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=8")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 8 executed successfully"
+        else
+          echo "Scrape function for page 8 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_9:
+    needs: scrape_page_8
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 9
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=9")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 9 executed successfully"
+        else
+          echo "Scrape function for page 9 failed with status code: $status_code"
+          echo -e "Error details:\n$body"
+          exit 1
+        fi
+
+  scrape_page_10:
+    needs: scrape_page_9
+    runs-on: ubuntu-latest
+    steps:
+    - name: Scrape Page 10
+      run: |
+        response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=10")
+        status_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+        echo "Status code: $status_code"
+        echo -e "Response body:\n$body"
+        if [ $status_code -eq 200 ]; then
+          echo "Scrape function for page 10 executed successfully"
+        else
+          echo "Scrape function for page 10 failed with status code: $status_code"
           echo -e "Error details:\n$body"
           exit 1
         fi
