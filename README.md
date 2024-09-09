@@ -76,4 +76,4 @@ vercel --prod
 
 ### Automated Scraping
 
-The project includes a GitHub Actions workflow that triggers the scraping process on a schedule. You can modify the schedule in the `.github/workflows/trigger_scrape.yml` file.
+The project includes a GitHub Actions workflow that triggers the scraping process on a schedule. You can modify the schedule in the `.github/workflows/trigger_scrape.yml` file. 
