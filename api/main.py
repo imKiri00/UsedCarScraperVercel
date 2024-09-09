@@ -7,9 +7,10 @@ from firebase_admin import firestore
 from api.firebase_init import db
 from api.scraper import extract_car_info
 from api.database import save_to_firestore
+import time
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Load environment variables
@@ -19,12 +20,13 @@ app = FastAPI()
 
 @app.get("/api/scrape")
 async def scrape():
-    logger.info("START!")
+    start_time = time.time()
+    logger.info("=== SCRAPE FUNCTION STARTED ===")
     total_new_posts = 0
     for a in range(1, 11):
         url = f"https://www.polovniautomobili.com/auto-oglasi/pretraga?page={a}&sort=basic&brand=alfa-romeo&city_distance=0&showOldNew=all&without_price=1"
         try:
-            logger.info(f"Starting scrape function for page {a}")
+            logger.info(f"Processing page {a}/10")
             extracted_posts = extract_car_info(url)
             logger.info(f"Extracted {len(extracted_posts)} posts from page {a}")
             new_posts = save_to_firestore(extracted_posts)
@@ -37,15 +39,22 @@ async def scrape():
             logger.error(stack_trace)
             # Continue to the next iteration instead of returning immediately
             continue
-    logger.info(f"END! Successfully processed {total_new_posts} new posts across 10 pages.")
-    return {"message": f"Successfully processed {total_new_posts} new posts across 10 pages."}
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    logger.info(f"=== SCRAPE FUNCTION COMPLETED ===")
+    logger.info(f"Total execution time: {execution_time:.2f} seconds")
+    logger.info(f"Total new posts processed: {total_new_posts}")
+    return {"message": f"Successfully processed {total_new_posts} new posts across 10 pages in {execution_time:.2f} seconds."}
 
 @app.get("/api/health")
 async def health_check():
+    logger.info("Health check endpoint called")
     return {"status": "healthy"}
 
 @app.get("/api/debug")
 async def debug():
+    logger.info("Debug endpoint called")
     try:
         # Test Firebase connection
         docs = db.collection('test').limit(1).get()
