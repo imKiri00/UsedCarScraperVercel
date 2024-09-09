@@ -59,37 +59,6 @@ async def health_check():
     logger.info("Health check endpoint called")
     return {"status": "healthy"}
 
-@app.get("/api/debug")
-async def debug():
-    logger.info("Debug endpoint called")
-    try:
-        # Test Firebase connection
-        docs = db.collection('test').limit(1).get()
-        firebase_ok = True
-        firebase_error = None
-    except Exception as e:
-        firebase_ok = False
-        firebase_error = str(e)
-
-    return {
-        "firebase_initialized": db is not None,
-        "firebase_connection_ok": firebase_ok,
-        "firebase_error": firebase_error,
-        "env_vars": {
-            "FIREBASE_TYPE": os.getenv('FIREBASE_TYPE') is not None,
-            "FIREBASE_PROJECT_ID": os.getenv('FIREBASE_PROJECT_ID') is not None,
-            "FIREBASE_PRIVATE_KEY_ID": os.getenv('FIREBASE_PRIVATE_KEY_ID') is not None,
-            "FIREBASE_PRIVATE_KEY": os.getenv('FIREBASE_PRIVATE_KEY') is not None,
-            "FIREBASE_CLIENT_EMAIL": os.getenv('FIREBASE_CLIENT_EMAIL') is not None,
-            "FIREBASE_CLIENT_ID": os.getenv('FIREBASE_CLIENT_ID') is not None,
-            "FIREBASE_AUTH_URI": os.getenv('FIREBASE_AUTH_URI') is not None,
-            "FIREBASE_TOKEN_URI": os.getenv('FIREBASE_TOKEN_URI') is not None,
-            "FIREBASE_AUTH_PROVIDER_X509_CERT_URL": os.getenv('FIREBASE_AUTH_PROVIDER_X509_CERT_URL') is not None,
-            "FIREBASE_CLIENT_X509_CERT_URL": os.getenv('FIREBASE_CLIENT_X509_CERT_URL') is not None,
-            "FIREBASE_UNIVERSE_DOMAIN": os.getenv('FIREBASE_UNIVERSE_DOMAIN') is not None,
-        }
-    }
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
