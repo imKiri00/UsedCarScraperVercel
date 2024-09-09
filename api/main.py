@@ -19,6 +19,7 @@ app = FastAPI()
 
 @app.get("/api/scrape")
 async def scrape():
+    logger.info("START!")
     total_new_posts = 0
     for a in range(1, 11):
         url = f"https://www.polovniautomobili.com/auto-oglasi/pretraga?page={a}&sort=basic&brand=alfa-romeo&city_distance=0&showOldNew=all&without_price=1"
@@ -36,7 +37,7 @@ async def scrape():
             logger.error(stack_trace)
             # Continue to the next iteration instead of returning immediately
             continue
-    
+    logger.info(f"END! Successfully processed {total_new_posts} new posts across 10 pages.")
     return {"message": f"Successfully processed {total_new_posts} new posts across 10 pages."}
 
 @app.get("/api/health")
