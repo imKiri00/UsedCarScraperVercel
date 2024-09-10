@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.encoders import jsonable_encoder
 import logging
 import os
 import hashlib
 import traceback
-import multipart
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, ValidationError
+from typing import List, Union, Dict
 
 app = FastAPI()
 
@@ -24,52 +24,64 @@ class CarPost(BaseModel):
     post_link: str = None
 
 @app.post("/api/database")
-async def save_to_database(posts: List[CarPost]):
+async def save_to_database(posts: Union[List[CarPost], List[Dict]]):
     try:
-        logger.info(f"Saving {len(posts)} posts to database")
-        new_posts = save_to_firestore(posts)
+        logger.info(f"Received {len(posts)} posts to save to database")
+        logger.debug(f"First post sample: {posts[0] if posts else 'No posts received'}")
+
+        # Convert all posts to CarPost objects for validation
+        validated_posts = []
+        for post in posts:
+            if isinstance(post, dict):
+                try:
+                    validated_posts.append(CarPost(**post))
+                except ValidationError as e:
+                    logger.error(f"Validation error for post: {post}")
+                    logger.error(f"Validation error details: {e}")
+                    raise HTTPException(status_code=422, detail=f"Invalid post data: {e}")
+            elif isinstance(post, CarPost):
+                validated_posts.append(post)
+            else:
+                logger.error(f"Unexpected post type: {type(post)}")
+                raise HTTPException(status_code=422, detail=f"Unexpected post type: {type(post)}")
+
+        new_posts = save_to_firestore(validated_posts)
         logger.info(f"Saved {len(new_posts)} new posts to database")
         return {"new_posts": new_posts}
+    except HTTPException as he:
+        raise he
     except Exception as e:
         logger.error(f"Error saving to database: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-
-
-def save_to_firestore(posts):
+def save_to_firestore(posts: List[CarPost]):
     new_posts = []
     try:
         for post in posts:
-            if isinstance(post, dict):
-                post_link = post.get('post_link')
-                if post_link:
-                    # Create a hash of the post_link to use as the document ID
-                    doc_id = hashlib.md5(post_link.encode()).hexdigest()
-                    doc_ref = db.collection('posts').document(doc_id)
-                    doc = doc_ref.get()
-                    if not doc.exists:
-                        doc_ref.set(post)
-                        new_posts.append(post)
-                        # Send email notification for new post
-                        subject = 'Novi Auto PolovniAutomobili'
-                        to_email = os.environ.get("NOTIFICATION_EMAIL")  # Email to receive notifications
-                        #send_email_notification(subject, post, to_email)
-            elif isinstance(post, str):
-                logger.warning(f"Skipping string post: {post[:100]}...")  # Log first 100 chars
+            post_dict = jsonable_encoder(post)
+            post_link = post_dict.get('post_link')
+            if post_link:
+                doc_id = hashlib.md5(post_link.encode()).hexdigest()
+                doc_ref = db.collection('posts').document(doc_id)
+                doc = doc_ref.get()
+                if not doc.exists:
+                    doc_ref.set(post_dict)
+                    new_posts.append(post_dict)
+                    logger.info(f"Saved new post: {post_link}")
+                else:
+                    logger.info(f"Post already exists, skipping: {post_link}")
             else:
-                logger.warning(f"Unexpected post type: {type(post)}")
+                logger.warning(f"Skipping post without post_link: {post_dict}")
         return new_posts
     except Exception as e:
         logger.error(f"Error in save_to_firestore: {str(e)}")
         logger.error(traceback.format_exc())
         raise
 
-
-
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore
-import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -103,8 +115,6 @@ def initialize_firebase():
 
 # Initialize Firebase when this module is imported
 db = initialize_firebase()
-
-
 
 if __name__ == "__main__":
     import uvicorn
