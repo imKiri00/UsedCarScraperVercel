@@ -3,18 +3,24 @@ import httpx
 import asyncio
 import logging
 import os
+from typing import Optional
 
 app = FastAPI()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Use environment variables for service URLs
-SCRAPER_FUNCTION_URL = os.getenv("SCRAPER_FUNCTION_URL", "http://localhost:8002/api/scrape")
-DATABASE_FUNCTION_URL = os.getenv("DATABASE_FUNCTION_URL", "http://localhost:8001/api/save")
-EMAIL_FUNCTION_URL = os.getenv("EMAIL_FUNCTION_URL", "http://localhost:8003/api/send_email")
+# Use environment variables for service URLs without default values
+SCRAPER_FUNCTION_URL = os.getenv("SCRAPER_FUNCTION_URL")
+DATABASE_FUNCTION_URL = os.getenv("DATABASE_FUNCTION_URL")
+EMAIL_FUNCTION_URL = os.getenv("EMAIL_FUNCTION_URL")
 
-async def process_data(page: int):
+# Check if environment variables are set
+if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
+    logger.error("One or more required environment variables are not set.")
+    raise EnvironmentError("Missing required environment variables")
+
+async def process_data(page: int) -> Optional[str]:
     try:
         async with httpx.AsyncClient() as client:
             # Call scraper function
@@ -47,15 +53,25 @@ async def process_data(page: int):
                 logger.info(f"Sent {len(email_tasks)} email notifications")
            
         logger.info(f"Successfully processed page {page}.")
+        return None
     except httpx.HTTPError as e:
-        logger.error(f"HTTP error occurred while calling {e.request.url}: {str(e)}")
+        error_message = f"HTTP error occurred while calling {e.request.url}: {str(e)}"
+        logger.error(error_message)
+        return error_message
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
+        error_message = f"Unexpected error: {str(e)}"
+        logger.error(error_message)
+        return error_message
 
 @app.get("/api/scrape")
 async def scrape(background_tasks: BackgroundTasks, page: int = Query(..., description="Page number to scrape")):
-    background_tasks.add_task(process_data, page)
-    return {"message": f"Processing page {page} in the background."}
+    try:
+        logger.info(f"Received request to scrape page {page}")
+        background_tasks.add_task(process_data, page)
+        return {"message": f"Processing page {page} in the background."}
+    except Exception as e:
+        logger.error(f"Error occurred while initiating background task: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
