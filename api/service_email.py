@@ -18,11 +18,11 @@ class EmailRequest(BaseModel):
 @app.post("/send_email")
 async def send_email(email_request: EmailRequest):
     try:
-        from_email = os.getenv("EMAIL_ADDRESS")
-        password = os.getenv("EMAIL_PASSWORD")
-        smtp_server = os.getenv("SMTP_SERVER")
-        smtp_port = int(os.getenv("SMTP_PORT"))
-        to_email = os.getenv("NOTIFICATION_EMAIL")
+        from_email = os.environ.get("EMAIL_ADDRESS")
+        password = os.environ.get("EMAIL_PASSWORD")
+        smtp_server = os.environ.get("SMTP_SERVER")
+        smtp_port = int(os.environ.get("SMTP_PORT"))
+        to_email = os.environ.get("NOTIFICATION_EMAIL")
 
         msg = MIMEMultipart()
         msg['From'] = from_email

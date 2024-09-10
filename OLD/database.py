@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def send_email_notification(subject, car_info, to_email):
-    from_email = os.getenv("EMAIL_ADDRESS")
-    password = os.getenv("EMAIL_PASSWORD")
-    smtp_server = os.getenv("SMTP_SERVER")
-    smtp_port = int(os.getenv("SMTP_PORT"))
+    from_email = os.environ.get("EMAIL_ADDRESS")
+    password = os.environ.get("EMAIL_PASSWORD")
+    smtp_server = os.environ.get("SMTP_SERVER")
+    smtp_port = int(os.environ.get("SMTP_PORT"))
 
     msg = MIMEMultipart()
     msg['From'] = from_email
@@ -69,7 +69,7 @@ def save_to_firestore(posts):
                         new_posts.append(post)
                         # Send email notification for new post
                         subject = 'Novi Auto PolovniAutomobili'
-                        to_email = os.getenv("NOTIFICATION_EMAIL")  # Email to receive notifications
+                        to_email = os.environ.get("NOTIFICATION_EMAIL")  # Email to receive notifications
                         #send_email_notification(subject, post, to_email)
             elif isinstance(post, str):
                 logger.warning(f"Skipping string post: {post[:100]}...")  # Log first 100 chars

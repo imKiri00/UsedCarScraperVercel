@@ -8,7 +8,7 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL")
+DATABASE_SERVICE_URL = os.environ.get("DATABASE_SERVICE_URL")
 
 @app.post("/api/save")
 async def save_to_database(posts: list):

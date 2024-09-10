@@ -8,7 +8,7 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-EMAIL_SERVICE_URL = os.getenv("EMAIL_SERVICE_URL")
+EMAIL_SERVICE_URL = os.environ.get("EMAIL_SERVICE_URL")
 
 @app.post("/api/send_email")
 async def send_email(email_data: dict):

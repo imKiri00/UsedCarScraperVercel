@@ -11,9 +11,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Use environment variables for service URLs without default values
-SCRAPER_FUNCTION_URL = os.getenv("SCRAPER_FUNCTION_URL")
-DATABASE_FUNCTION_URL = os.getenv("DATABASE_FUNCTION_URL")
-EMAIL_FUNCTION_URL = os.getenv("EMAIL_FUNCTION_URL")
+SCRAPER_FUNCTION_URL = os.environ.get("SCRAPER_FUNCTION_URL")
+DATABASE_FUNCTION_URL = os.environ.get("DATABASE_FUNCTION_URL")
+EMAIL_FUNCTION_URL = os.environ.get("EMAIL_FUNCTION_URL")
 
 # Check if environment variables are set
 if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
