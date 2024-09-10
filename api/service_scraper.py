@@ -7,7 +7,7 @@ app = FastAPI()
 logger = logging.getLogger(__name__)
 
 @app.get("/scrape")
-async def scrape(page: int):
+async def scrape_page(page: int):
     url = f"https://www.polovniautomobili.com/auto-oglasi/pretraga?page={page}&sort=basic&brand=alfa-romeo&city_distance=0&showOldNew=all&without_price=1"
     
     try:
