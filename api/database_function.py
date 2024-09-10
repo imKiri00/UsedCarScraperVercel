@@ -5,12 +5,19 @@ import os
 import hashlib
 import traceback
 import json
+import httpx
 from typing import List, Dict, Any
 
 app = FastAPI()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+EMAIL_FUNCTION_URL = os.environ.get("EMAIL_FUNCTION_URL")
+
+if not EMAIL_FUNCTION_URL:
+    logger.error("EMAIL_FUNCTION_URL environment variable is not set")
+    raise EnvironmentError("Missing required environment variable: EMAIL_FUNCTION_URL")
 
 @app.post("/api/database")
 async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
@@ -22,8 +29,13 @@ async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
         if not isinstance(posts, list):
             raise HTTPException(status_code=422, detail=f"Expected a list of posts, but received {type(posts)}")
 
-        new_posts = save_to_firestore(posts)
+        new_posts = await save_to_firestore(posts)
         logger.info(f"Saved {len(new_posts)} new posts to database")
+        
+        # Send email notifications for new posts
+        for post in new_posts:
+            await send_email_notification(post)
+        
         return {"new_posts": new_posts}
     except HTTPException as he:
         raise he
@@ -32,7 +44,7 @@ async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-def save_to_firestore(posts: List[Dict[str, Any]]):
+async def save_to_firestore(posts: List[Dict[str, Any]]):
     new_posts = []
     try:
         for post in posts:
@@ -54,6 +66,21 @@ def save_to_firestore(posts: List[Dict[str, Any]]):
         logger.error(f"Error in save_to_firestore: {str(e)}")
         logger.error(traceback.format_exc())
         raise
+
+async def send_email_notification(post: Dict[str, Any]):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                EMAIL_FUNCTION_URL,
+                json={"subject": "New Car Listed", "car_info": post},
+                timeout=30.0
+            )
+            response.raise_for_status()
+            logger.info(f"Email notification sent for post: {post.get('post_link')}")
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {str(e)}")
+        # We don't want to raise an exception here, as it would stop the database function
+        # Instead, we log the error and continue
 
 import os
 import firebase_admin
