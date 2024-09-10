@@ -23,6 +23,10 @@ if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
     logger.error(f"One or more required environment variables are not set. U have {SCRAPER_FUNCTION_URL}, {DATABASE_FUNCTION_URL}, {EMAIL_FUNCTION_URL}")
     raise EnvironmentError("Missing required environment variables")
 
+# Configuration
+BATCH_SIZE = 5
+BATCH_DELAY = 1  # Delay between batches in seconds
+
 class CarPost(BaseModel):
     title: str = None
     price: str = None
@@ -54,51 +58,61 @@ async def process_data(page: int) -> Optional[str]:
             scraper_response.raise_for_status()
             extracted_posts = scraper_response.json()["posts"]
             logger.info(f"Received {len(extracted_posts)} posts from scraper function")
-            logger.debug(f"Sample of extracted posts: {json.dumps(extracted_posts[:2], indent=2)}")
-           
+            
             # Convert extracted posts to CarPost objects
             car_posts = convert_to_car_posts(extracted_posts)
             logger.info(f"Converted {len(car_posts)} posts to CarPost objects")
-            logger.debug(f"Sample of converted CarPost objects: {json.dumps([post.dict() for post in car_posts[:2]], indent=2)}")
-
-            # Call database function
-            logger.info(f"Calling database function to save {len(car_posts)} posts")
-            posts_to_save = [post.dict() for post in car_posts]
-            logger.debug(f"Sample of posts being sent to database: {json.dumps(posts_to_save[:2], indent=2)}")
-            database_response = await client.post(DATABASE_FUNCTION_URL, json=posts_to_save)
             
-            # Log the entire response from the database function
-            logger.info(f"Database function response status: {database_response.status_code}")
-            logger.info(f"Database function response headers: {dict(database_response.headers)}")
-            logger.info(f"Database function response content: {database_response.text}")
+            # Call database function in batches
+            new_posts = []
+            for i in range(0, len(car_posts), BATCH_SIZE):
+                batch = car_posts[i:i+BATCH_SIZE]
+                posts_to_save = [post.dict() for post in batch]
+                logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(posts_to_save)} posts")
+                database_response = await client.post(DATABASE_FUNCTION_URL, json=posts_to_save)
+                database_response.raise_for_status()
+                save_result = database_response.json()
+                logger.info(f"Database function response for batch {i//BATCH_SIZE + 1} (parsed): {save_result}")
+                new_posts.extend(save_result.get("new_posts", []))
+                
+                if i + BATCH_SIZE < len(car_posts):
+                    logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
+                    await asyncio.sleep(BATCH_DELAY)
             
-            database_response.raise_for_status()
-            save_result = database_response.json()
-            logger.info(f"Database function response (parsed): {save_result}")
-           
-            new_posts = save_result.get("new_posts", [])
             new_posts_count = len(new_posts)
-            logger.info(f"Number of new posts: {new_posts_count}")
+            logger.info(f"Total number of new posts: {new_posts_count}")
 
-            # Send email notifications for new posts
-            email_tasks = []
-            for post in new_posts:
-                email_task = client.post(EMAIL_FUNCTION_URL,
-                                         json={"subject": "New Car Listed", "car_info": post})
-                email_tasks.append(email_task)
-           
-            if email_tasks:
-                await asyncio.gather(*email_tasks)
-                logger.info(f"Sent {len(email_tasks)} email notifications")
+            # Send email notifications for new posts (in batches to avoid timeout)
+            for i in range(0, len(new_posts), BATCH_SIZE):
+                batch = new_posts[i:i+BATCH_SIZE]
+                email_tasks = []
+                for post in batch:
+                    email_task = client.post(EMAIL_FUNCTION_URL,
+                                             json={"subject": "New Car Listed", "car_info": post})
+                    email_tasks.append(email_task)
+               
+                if email_tasks:
+                    await asyncio.gather(*email_tasks)
+                    logger.info(f"Sent {len(email_tasks)} email notifications for batch {i//BATCH_SIZE + 1}")
+                
+                if i + BATCH_SIZE < len(new_posts):
+                    logger.info(f"Waiting {BATCH_DELAY} seconds before sending next batch of emails")
+                    await asyncio.sleep(BATCH_DELAY)
            
         logger.info(f"Successfully processed page {page}.")
         return None
+    except httpx.ReadTimeout as e:
+        error_message = f"Read timeout occurred while calling {e.request.url}: {str(e)}"
+        logger.error(error_message)
+        return error_message
     except httpx.HTTPError as e:
         error_message = f"HTTP error occurred while calling {e.request.url}: {str(e)}"
         logger.error(error_message)
-        if e.response:
+        if hasattr(e, 'response') and e.response is not None:
             logger.error(f"Response status code: {e.response.status_code}")
             logger.error(f"Response content: {e.response.text}")
+        else:
+            logger.error("No response available for this error.")
         return error_message
     except Exception as e:
         error_message = f"Unexpected error: {str(e)}"

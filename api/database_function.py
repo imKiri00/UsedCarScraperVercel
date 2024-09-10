@@ -4,12 +4,13 @@ import logging
 import os
 import hashlib
 import traceback
+import json
 from pydantic import BaseModel, ValidationError
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 
 app = FastAPI()
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class CarPost(BaseModel):
@@ -24,26 +25,29 @@ class CarPost(BaseModel):
     post_link: str = None
 
 @app.post("/api/database")
-async def save_to_database(posts: Union[List[CarPost], List[Dict]]):
+async def save_to_database(posts: Any):
     try:
-        logger.info(f"Received {len(posts)} posts to save to database")
-        logger.debug(f"First post sample: {posts[0] if posts else 'No posts received'}")
+        logger.info(f"Received data to save to database. Type: {type(posts)}")
+        logger.debug(f"Received data: {json.dumps(posts, indent=2)}")
+
+        if not isinstance(posts, list):
+            raise HTTPException(status_code=422, detail=f"Expected a list of posts, but received {type(posts)}")
 
         # Convert all posts to CarPost objects for validation
         validated_posts = []
-        for post in posts:
+        for i, post in enumerate(posts):
             if isinstance(post, dict):
                 try:
                     validated_posts.append(CarPost(**post))
                 except ValidationError as e:
-                    logger.error(f"Validation error for post: {post}")
+                    logger.error(f"Validation error for post at index {i}: {post}")
                     logger.error(f"Validation error details: {e}")
-                    raise HTTPException(status_code=422, detail=f"Invalid post data: {e}")
+                    raise HTTPException(status_code=422, detail=f"Invalid post data at index {i}: {e}")
             elif isinstance(post, CarPost):
                 validated_posts.append(post)
             else:
-                logger.error(f"Unexpected post type: {type(post)}")
-                raise HTTPException(status_code=422, detail=f"Unexpected post type: {type(post)}")
+                logger.error(f"Unexpected post type at index {i}: {type(post)}")
+                raise HTTPException(status_code=422, detail=f"Unexpected post type at index {i}: {type(post)}")
 
         new_posts = save_to_firestore(validated_posts)
         logger.info(f"Saved {len(new_posts)} new posts to database")
