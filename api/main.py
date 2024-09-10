@@ -53,18 +53,17 @@ async def process_data(page: int) -> Optional[str]:
             new_posts = []
             for i in range(0, len(extracted_posts), BATCH_SIZE):
                 batch = extracted_posts[i:i+BATCH_SIZE]
-                posts_to_save = [post.dict() for post in batch]  # Convert to dict for JSON serialization
-                logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(posts_to_save)} posts")
-                database_response = await client.post(DATABASE_FUNCTION_URL, json=posts_to_save)
+                logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(batch)} posts")
+                database_response = await client.post(DATABASE_FUNCTION_URL, json=[post.model_dump() for post in batch])
                 database_response.raise_for_status()
                 save_result = database_response.json()
                 logger.info(f"Database function response for batch {i//BATCH_SIZE + 1} (parsed): {save_result}")
                 new_posts.extend([CarPost(**post) for post in save_result.get("new_posts", [])])
+        
+            if i + BATCH_SIZE < len(extracted_posts):
+                logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
+                await asyncio.sleep(BATCH_DELAY)
                 
-                if i + BATCH_SIZE < len(extracted_posts):
-                    logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
-                    await asyncio.sleep(BATCH_DELAY)
-            
             new_posts_count = len(new_posts)
             logger.info(f"Total number of new posts: {new_posts_count}")
 
