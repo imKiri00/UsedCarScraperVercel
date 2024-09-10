@@ -5,7 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
-from api.firebase_init import db
+from OLD.firebase_init import db
 import hashlib
 
 # Set up logging

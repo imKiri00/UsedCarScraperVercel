@@ -1,15 +1,39 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "api/main.py",
-        "use": "@vercel/python"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "api/main.py"
-      }
-    ]
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/main.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/scraper_function.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/database_function.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/email_function.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/scrape",
+      "dest": "api/main.py"
+    },
+    {
+      "src": "/api/scraper",
+      "dest": "api/scraper_function.py"
+    },
+    {
+      "src": "/api/database",
+      "dest": "api/database_function.py"
+    },
+    {
+      "src": "/api/email",
+      "dest": "api/email_function.py"
+    }
+  ]
+}
