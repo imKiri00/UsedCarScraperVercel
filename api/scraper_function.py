@@ -80,17 +80,18 @@ async def extract_car_info(url):
         post_link = re.search(post_link_pattern, article)
         
         car_info = {
-            "title": title.group(1) if title else None,
-            "price": price.group(1) if price else None,
-            "year_body": year_body.group(1) if year_body else None,
-            "engine": engine.group(1) if engine else None,
-            "mileage": mileage.group(1) if mileage else None,
-            "power": power.group(1) if power else None,
-            "transmission": transmission.group(1) if transmission else None,
-            "doors_seats": doors_seats.group(1) if doors_seats else None,
-            "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else None
+            "title": title.group(1) if title else "",
+            "price": price.group(1) if price else "",  
+            "year_body": year_body.group(1) if year_body else "",
+            "engine": engine.group(1) if engine else "",
+            "mileage": mileage.group(1) if mileage else "",
+            "power": power.group(1) if power else "",
+            "transmission": transmission.group(1) if transmission else "",
+            "doors_seats": doors_seats.group(1) if doors_seats else "",
+            "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else ""
         }
-        car_info_list.append(car_info)
+        
+
     
     logger.info(f"Successfully extracted information for {len(car_info_list)} cars")
     return car_info_list
