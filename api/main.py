@@ -36,12 +36,14 @@ async def process_data(page: int) -> Optional[str]:
             scraper_response.raise_for_status()
             extracted_posts = scraper_response.json()["posts"]
             logger.info(f"Received {len(extracted_posts)} posts from scraper function")
+            logger.debug(f"Sample post from scraper: {json.dumps(extracted_posts[0] if extracted_posts else {}, indent=2)}")
             
             # Call database function in batches
             new_posts = []
             for i in range(0, len(extracted_posts), BATCH_SIZE):
                 batch = extracted_posts[i:i+BATCH_SIZE]
                 logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(batch)} posts")
+                logger.debug(f"Sample post being sent to database: {json.dumps(batch[0] if batch else {}, indent=2)}")
     
                 # Send the data in the request body as JSON
                 database_response = await client.post(DATABASE_FUNCTION_URL, json={"posts": batch})

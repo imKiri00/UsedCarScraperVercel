@@ -12,17 +12,6 @@ from typing import List
 
 logger = logging.getLogger(__name__)
 
-class CarPost(BaseModel):
-    title: str = Field(default="")
-    price: str = Field(default="")
-    year_body: str = Field(default="")
-    engine: str = Field(default="")
-    mileage: str = Field(default="")
-    power: str = Field(default="")
-    transmission: str = Field(default="")
-    doors_seats: str = Field(default="")
-    post_link: str = Field(default="")
-
 def extract_car_info(url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -81,14 +70,9 @@ def extract_car_info(url):
             "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else ""
             }
         
-            try:
-                car_post = CarPost(**car_info)
-                car_info_list.append(car_post)
-            except Exception as e:
-                logger.error(f"Error creating CarPost object: {str(e)}")
-                logger.error(f"Problematic car_info: {car_info}")
 
-                
+            car_info_list.append(car_info)
+          
         logger.info(f"Successfully extracted information for {len(car_info_list)} cars")
         return car_info_list
 
