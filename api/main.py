@@ -28,15 +28,15 @@ BATCH_SIZE = 5
 BATCH_DELAY = 1  # Delay between batches in seconds
 
 class CarPost(BaseModel):
-    title: str = None
-    price: str = None
-    year_body: str = None
-    engine: str = None
-    mileage: str = None
-    power: str = None
-    transmission: str = None
-    doors_seats: str = None
-    post_link: str = None
+    title: str = "N/A"
+    price: str = "N/A"
+    year_body: str = "N/A"
+    engine: str = "N/A"
+    mileage: str = "N/A"
+    power: str = "N/A"
+    transmission: str = "N/A"
+    doors_seats: str = "N/A"
+    post_link: str = "N/A"
 
 def convert_to_car_posts(extracted_posts: List[Dict]) -> List[CarPost]:
     car_posts = []

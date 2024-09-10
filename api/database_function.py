@@ -14,15 +14,15 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 
 class CarPost(BaseModel):
-    title: str = None
-    price: str = None
-    year_body: str = None
-    engine: str = None
-    mileage: str = None
-    power: str = None
-    transmission: str = None
-    doors_seats: str = None
-    post_link: str = None
+    title: str = "N/A"
+    price: str = "N/A"
+    year_body: str = "N/A"
+    engine: str = "N/A"
+    mileage: str = "N/A"
+    power: str = "N/A"
+    transmission: str = "N/A"
+    doors_seats: str = "N/A"
+    post_link: str = "N/A"
 
 @app.post("/api/database")
 async def save_to_database(posts: Any):
