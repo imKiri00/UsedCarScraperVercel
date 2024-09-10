@@ -12,7 +12,9 @@ async def scrape(page: int):
     
     try:
         car_info_list = await extract_car_info(url)
-        return {"posts": car_info_list}
+        
+        q = {"posts": car_info_list}
+        return q
     except Exception as e:
         logger.error(f"Scraping error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

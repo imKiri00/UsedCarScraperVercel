@@ -4,12 +4,12 @@ from firebase_admin import credentials, firestore
 import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+import hashlib
+from typing import List
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
 load_dotenv()
 
 app = FastAPI()
@@ -44,27 +44,36 @@ def initialize_firebase():
 # Initialize Firebase when this module is imported
 db = initialize_firebase()
 
+
 @app.post("/save")
-async def save_data(data: dict):
+async def save_data(posts: List[dict]):
+    new = 0
+    old = 0
+    new_posts = []
     try:
-        # Your logic to save data to Firebase
-        # For example:
-        doc_ref = db.collection('your_collection').document()
-        doc_ref.set(data)
-        return {"message": "Data saved successfully"}
+        for post in posts:
+            if isinstance(post, dict) and 'post_link' in post:
+                post_link = post['post_link']
+                doc_id = hashlib.md5(post_link.encode()).hexdigest()
+                doc_ref = db.collection('posts').document(doc_id)
+                doc = doc_ref.get()
+                if not doc.exists:
+                    doc_ref.set(post)
+                    new += 1
+                    new_posts.append(post)
+                else:
+                    old += 1
+            else:
+                logger.warning(f"Skipping invalid post: {post}")
+       
+        return {
+            "message": f"New: {new}, old: {old}",
+            "new_posts": new_posts
+        }
     except Exception as e:
         logger.error(f"Failed to save data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/health")
-async def health_check():
-    try:
-        # Perform a simple read operation to check if Firebase is accessible
-        db.collection('health_check').document('test').get()
-        return {"status": "healthy", "message": "Firebase connection is working"}
-    except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=500, detail="Firebase connection is not working")
 
 if __name__ == "__main__":
     import uvicorn
