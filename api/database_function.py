@@ -4,15 +4,27 @@ import os
 import hashlib
 import traceback
 import multipart
+from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+class CarPost(BaseModel):
+    title: str = None
+    price: str = None
+    year_body: str = None
+    engine: str = None
+    mileage: str = None
+    power: str = None
+    transmission: str = None
+    doors_seats: str = None
+    post_link: str = None
 
 @app.post("/api/database")
-async def save_to_database(posts: list):
+async def save_to_database(posts: List[CarPost]):
     try:
         logger.info(f"Saving {len(posts)} posts to database")
         new_posts = save_to_firestore(posts)
