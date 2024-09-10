@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 SCRAPER_SERVICE_URL = os.environ.get("SCRAPER_SERVICE_URL")
 
-@app.get("/api/scrape")
+@app.get("/api/scraper")
 async def scrape(page: int = Query(..., description="Page number to scrape")):
     try:
         async with httpx.AsyncClient() as client:

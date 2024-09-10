@@ -20,7 +20,7 @@
   ],
   "routes": [
     {
-      "src": "/api/scrape",
+      "src": "/api/main",
       "dest": "api/main.py"
     },
     {

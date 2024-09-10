@@ -19,7 +19,7 @@ jobs:
         max_retries=3
         retry_count=0
         while [ $retry_count -lt $max_retries ]; do
-          response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/scrape?page=${{ matrix.page }}")
+          response=$(curl -s -w "\n%{http_code}" "https://used-car-scraper-vercel.vercel.app/api/main?page=${{ matrix.page }}")
           status_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "Status code: $status_code"

@@ -63,7 +63,7 @@ async def process_data(page: int) -> Optional[str]:
         logger.error(error_message)
         return error_message
 
-@app.get("/api/scrape")
+@app.get("/api/main")
 async def scrape(background_tasks: BackgroundTasks, page: int = Query(..., description="Page number to scrape")):
     try:
         logger.info(f"Received request to scrape page {page}")
