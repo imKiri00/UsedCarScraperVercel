@@ -32,7 +32,7 @@
       "dest": "api/database_function.py"
     },
     {
-      "src": "/api/email",
+      "src": "/api/send_email",
       "dest": "api/email_function.py"
     }
   ]

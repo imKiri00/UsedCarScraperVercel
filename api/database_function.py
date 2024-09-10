@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-@app.post("/api/save")
+@app.post("/api/database")
 async def save_to_database(posts: list):
     try:
         logger.info(f"Saving {len(posts)} posts to database")
