@@ -17,6 +17,11 @@ EMAIL_FUNCTION_URL = os.getenv("EMAIL_FUNCTION_URL")
 
 # Check if environment variables are set
 if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
+    logger.log(SCRAPER_FUNCTION_URL)
+    logger.log(DATABASE_FUNCTION_URL)
+    logger.log(EMAIL_FUNCTION_URL)
+
+        
     logger.error("One or more required environment variables are not set.")
     raise EnvironmentError("Missing required environment variables")
 
