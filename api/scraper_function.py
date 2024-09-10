@@ -3,7 +3,8 @@ import httpx
 import logging
 import os
 import re
-
+from pydantic import BaseModel, Field
+from typing import List
 
 app = FastAPI()
 
@@ -36,6 +37,17 @@ async def scrape_page(page: int):
     except Exception as e:
         logger.error(f"Scraping error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+class CarPost(BaseModel):
+    title: str = Field(default="")
+    price: str = Field(default="")
+    year_body: str = Field(default="")
+    engine: str = Field(default="")
+    mileage: str = Field(default="")
+    power: str = Field(default="")
+    transmission: str = Field(default="")
+    doors_seats: str = Field(default="")
+    post_link: str = Field(default="")
 
 async def extract_car_info(url):
     headers = {
@@ -81,7 +93,7 @@ async def extract_car_info(url):
         
         car_info = {
             "title": title.group(1) if title else "",
-            "price": price.group(1) if price else "",  
+            "price": price.group(1) if price else "",
             "year_body": year_body.group(1) if year_body else "",
             "engine": engine.group(1) if engine else "",
             "mileage": mileage.group(1) if mileage else "",
@@ -91,8 +103,13 @@ async def extract_car_info(url):
             "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else ""
         }
         
-
-    
+        try:
+            car_post = CarPost(**car_info)
+            car_info_list.append(car_post)
+        except Exception as e:
+            logger.error(f"Error creating CarPost object: {str(e)}")
+            logger.error(f"Problematic car_info: {car_info}")
+   
     logger.info(f"Successfully extracted information for {len(car_info_list)} cars")
     return car_info_list
 

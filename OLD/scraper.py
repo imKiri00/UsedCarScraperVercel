@@ -2,11 +2,28 @@ import re
 import requests
 import logging
 import traceback
+from fastapi import FastAPI, Query, HTTPException
+import httpx
+import logging
+import os
+import re
+from pydantic import BaseModel, Field
+from typing import List
 
 logger = logging.getLogger(__name__)
 
+class CarPost(BaseModel):
+    title: str = Field(default="")
+    price: str = Field(default="")
+    year_body: str = Field(default="")
+    engine: str = Field(default="")
+    mileage: str = Field(default="")
+    power: str = Field(default="")
+    transmission: str = Field(default="")
+    doors_seats: str = Field(default="")
+    post_link: str = Field(default="")
+
 def extract_car_info(url):
-    try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept-Language': 'en-US,en;q=0.9',
@@ -53,28 +70,28 @@ def extract_car_info(url):
             post_link = re.search(post_link_pattern, article)
 
             car_info = {
-                "title": title.group(1) if title else None,
-                "price": price.group(1) if price else None,
-                "year_body": year_body.group(1) if year_body else None,
-                "engine": engine.group(1) if engine else None,
-                "mileage": mileage.group(1) if mileage else None,
-                "power": power.group(1) if power else None,
-                "transmission": transmission.group(1) if transmission else None,
-                "doors_seats": doors_seats.group(1) if doors_seats else None,
-                "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else None
+            "title": title.group(1) if title else "",
+            "price": price.group(1) if price else "",
+            "year_body": year_body.group(1) if year_body else "",
+            "engine": engine.group(1) if engine else "",
+            "mileage": mileage.group(1) if mileage else "",
+            "power": power.group(1) if power else "",
+            "transmission": transmission.group(1) if transmission else "",
+            "doors_seats": doors_seats.group(1) if doors_seats else "",
+            "post_link": "https://www.polovniautomobili.com" + post_link.group(1) if post_link else ""
             }
-            car_info_list.append(car_info)
+        
+            try:
+                car_post = CarPost(**car_info)
+                car_info_list.append(car_post)
+            except Exception as e:
+                logger.error(f"Error creating CarPost object: {str(e)}")
+                logger.error(f"Problematic car_info: {car_info}")
 
+                
         logger.info(f"Successfully extracted information for {len(car_info_list)} cars")
         return car_info_list
 
-    except requests.RequestException as e:
-        logger.error(f"Failed to fetch or parse URL: {str(e)}")
-        raise
-    except Exception as e:
-        logger.error(f"Error in extract_car_info: {str(e)}")
-        logger.error(traceback.format_exc())
-        raise
 
 
 

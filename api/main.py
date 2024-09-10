@@ -6,7 +6,7 @@ import os
 import json
 import traceback
 from typing import Optional, List, Dict
-from pydantic import BaseModel
+
 
 app = FastAPI()
 
@@ -27,28 +27,6 @@ if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
 BATCH_SIZE = 5
 BATCH_DELAY = 1  # Delay between batches in seconds
 
-class CarPost(BaseModel):
-    title: str = "N/A"
-    price: str = "N/A"
-    year_body: str = "N/A"
-    engine: str = "N/A"
-    mileage: str = "N/A"
-    power: str = "N/A"
-    transmission: str = "N/A"
-    doors_seats: str = "N/A"
-    post_link: str = "N/A"
-
-def convert_to_car_posts(extracted_posts: List[Dict]) -> List[CarPost]:
-    car_posts = []
-    for post in extracted_posts:
-        try:
-            car_post = CarPost(**post)
-            car_posts.append(car_post)
-        except Exception as e:
-            logger.error(f"Error converting post to CarPost: {str(e)}")
-            logger.error(f"Problematic post: {json.dumps(post, indent=2)}")
-    return car_posts
-
 async def process_data(page: int) -> Optional[str]:
     try:
         async with httpx.AsyncClient() as client:
@@ -59,14 +37,11 @@ async def process_data(page: int) -> Optional[str]:
             extracted_posts = scraper_response.json()["posts"]
             logger.info(f"Received {len(extracted_posts)} posts from scraper function")
             
-            # Convert extracted posts to CarPost objects
-            car_posts = convert_to_car_posts(extracted_posts)
-            logger.info(f"Converted {len(car_posts)} posts to CarPost objects")
             
             # Call database function in batches
             new_posts = []
-            for i in range(0, len(car_posts), BATCH_SIZE):
-                batch = car_posts[i:i+BATCH_SIZE]
+            for i in range(0, len(extracted_posts), BATCH_SIZE):
+                batch = extracted_posts[i:i+BATCH_SIZE]
                 posts_to_save = [post.dict() for post in batch]
                 logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(posts_to_save)} posts")
                 database_response = await client.post(DATABASE_FUNCTION_URL, json=posts_to_save)
@@ -75,7 +50,7 @@ async def process_data(page: int) -> Optional[str]:
                 logger.info(f"Database function response for batch {i//BATCH_SIZE + 1} (parsed): {save_result}")
                 new_posts.extend(save_result.get("new_posts", []))
                 
-                if i + BATCH_SIZE < len(car_posts):
+                if i + BATCH_SIZE < len(extracted_posts):
                     logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
                     await asyncio.sleep(BATCH_DELAY)
             
