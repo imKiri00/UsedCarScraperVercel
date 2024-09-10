@@ -5,36 +5,23 @@ import os
 import hashlib
 import traceback
 import json
-from pydantic import BaseModel, ValidationError
-from typing import List, Union, Dict, Any
+from typing import List, Dict, Any
 
 app = FastAPI()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class CarPost(BaseModel):
-    title: str = "N/A"
-    price: str = "N/A"
-    year_body: str = "N/A"
-    engine: str = "N/A"
-    mileage: str = "N/A"
-    power: str = "N/A"
-    transmission: str = "N/A"
-    doors_seats: str = "N/A"
-    post_link: str = "N/A"
-
 @app.post("/api/database")
-async def save_to_database(data: Dict[str, List[CarPost]] = Body(...)):  #altered
+async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
     try:
         posts = data.get("posts", [])
         logger.info(f"Received data to save to database. Number of posts: {len(posts)}")
-        logger.debug(f"Received data: {json.dumps([post.dict() for post in posts], indent=2)}")  #altered
+        logger.debug(f"Received data: {json.dumps(posts, indent=2)}")
 
         if not isinstance(posts, list):
             raise HTTPException(status_code=422, detail=f"Expected a list of posts, but received {type(posts)}")
 
-        # Posts are already CarPost objects, no need for conversion
         new_posts = save_to_firestore(posts)
         logger.info(f"Saved {len(new_posts)} new posts to database")
         return {"new_posts": new_posts}
@@ -45,24 +32,23 @@ async def save_to_database(data: Dict[str, List[CarPost]] = Body(...)):  #altere
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-def save_to_firestore(posts: List[CarPost]):
+def save_to_firestore(posts: List[Dict[str, Any]]):
     new_posts = []
     try:
         for post in posts:
-            post_dict = jsonable_encoder(post)
-            post_link = post_dict.get('post_link')
+            post_link = post.get('post_link')
             if post_link:
                 doc_id = hashlib.md5(post_link.encode()).hexdigest()
                 doc_ref = db.collection('posts').document(doc_id)
                 doc = doc_ref.get()
                 if not doc.exists:
-                    doc_ref.set(post_dict)
-                    new_posts.append(post_dict)
+                    doc_ref.set(post)
+                    new_posts.append(post)
                     logger.info(f"Saved new post: {post_link}")
                 else:
                     logger.info(f"Post already exists, skipping: {post_link}")
             else:
-                logger.warning(f"Skipping post without post_link: {post_dict}")
+                logger.warning(f"Skipping post without post_link: {post}")
         return new_posts
     except Exception as e:
         logger.error(f"Error in save_to_firestore: {str(e)}")

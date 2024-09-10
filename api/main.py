@@ -27,18 +27,6 @@ if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL, EMAIL_FUNCTION_URL]):
 BATCH_SIZE = 5
 BATCH_DELAY = 1  # Delay between batches in seconds
 
-# Define CarPost model to match the one in scraper_function.py and database_function.py
-class CarPost(BaseModel):
-    title: str = "N/A"
-    price: str = "N/A"
-    year_body: str = "N/A"
-    engine: str = "N/A"
-    mileage: str = "N/A"
-    power: str = "N/A"
-    transmission: str = "N/A"
-    doors_seats: str = "N/A"
-    post_link: str = "N/A"
-
 async def process_data(page: int) -> Optional[str]:
     try:
         async with httpx.AsyncClient() as client:
@@ -46,7 +34,7 @@ async def process_data(page: int) -> Optional[str]:
             logger.info(f"Calling scraper function for page {page}")
             scraper_response = await client.get(SCRAPER_FUNCTION_URL, params={"page": page})
             scraper_response.raise_for_status()
-            extracted_posts = [CarPost(**post) for post in scraper_response.json()["posts"]]
+            extracted_posts = scraper_response.json()["posts"]
             logger.info(f"Received {len(extracted_posts)} posts from scraper function")
             
             # Call database function in batches
@@ -55,16 +43,16 @@ async def process_data(page: int) -> Optional[str]:
                 batch = extracted_posts[i:i+BATCH_SIZE]
                 logger.info(f"Calling database function to save batch {i//BATCH_SIZE + 1} of {len(batch)} posts")
     
-            # Send the data in the request body as JSON
-            database_response = await client.post(DATABASE_FUNCTION_URL, json={"posts": batch})  #altered
-            database_response.raise_for_status()
-            save_result = database_response.json()
-            logger.info(f"Database function response for batch {i//BATCH_SIZE + 1} (parsed): {save_result}")
-            new_posts.extend([CarPost(**post) for post in save_result.get("new_posts", [])])
+                # Send the data in the request body as JSON
+                database_response = await client.post(DATABASE_FUNCTION_URL, json={"posts": batch})
+                database_response.raise_for_status()
+                save_result = database_response.json()
+                logger.info(f"Database function response for batch {i//BATCH_SIZE + 1} (parsed): {save_result}")
+                new_posts.extend(save_result.get("new_posts", []))
 
-            if i + BATCH_SIZE < len(extracted_posts):
-                logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
-                await asyncio.sleep(BATCH_DELAY)
+                if i + BATCH_SIZE < len(extracted_posts):
+                    logger.info(f"Waiting {BATCH_DELAY} seconds before processing next batch")
+                    await asyncio.sleep(BATCH_DELAY)
                         
             new_posts_count = len(new_posts)
             logger.info(f"Total number of new posts: {new_posts_count}")
@@ -75,7 +63,7 @@ async def process_data(page: int) -> Optional[str]:
                 email_tasks = []
                 for post in batch:
                     email_task = client.post(EMAIL_FUNCTION_URL,
-                                             json={"subject": "New Car Listed", "car_info": post.dict()})
+                                             json={"subject": "New Car Listed", "car_info": post})
                     email_tasks.append(email_task)
                
                 if email_tasks:
