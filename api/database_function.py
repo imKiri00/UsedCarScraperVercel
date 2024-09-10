@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.encoders import jsonable_encoder
 import logging
 import os
@@ -25,31 +25,17 @@ class CarPost(BaseModel):
     post_link: str = "N/A"
 
 @app.post("/api/database")
-async def save_to_database(posts: Any):
+async def save_to_database(data: Dict[str, List[CarPost]] = Body(...)):  #altered
     try:
-        logger.info(f"Received data to save to database. Type: {type(posts)}")
-        logger.debug(f"Received data: {json.dumps(posts, indent=2)}")
+        posts = data.get("posts", [])
+        logger.info(f"Received data to save to database. Number of posts: {len(posts)}")
+        logger.debug(f"Received data: {json.dumps([post.dict() for post in posts], indent=2)}")  #altered
 
         if not isinstance(posts, list):
             raise HTTPException(status_code=422, detail=f"Expected a list of posts, but received {type(posts)}")
 
-        # Convert all posts to CarPost objects for validation
-        validated_posts = []
-        for i, post in enumerate(posts):
-            if isinstance(post, dict):
-                try:
-                    validated_posts.append(CarPost(**post))
-                except ValidationError as e:
-                    logger.error(f"Validation error for post at index {i}: {post}")
-                    logger.error(f"Validation error details: {e}")
-                    raise HTTPException(status_code=422, detail=f"Invalid post data at index {i}: {e}")
-            elif isinstance(post, CarPost):
-                validated_posts.append(post)
-            else:
-                logger.error(f"Unexpected post type at index {i}: {type(post)}")
-                raise HTTPException(status_code=422, detail=f"Unexpected post type at index {i}: {type(post)}")
-
-        new_posts = save_to_firestore(validated_posts)
+        # Posts are already CarPost objects, no need for conversion
+        new_posts = save_to_firestore(posts)
         logger.info(f"Saved {len(new_posts)} new posts to database")
         return {"new_posts": new_posts}
     except HTTPException as he:
