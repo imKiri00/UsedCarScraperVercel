@@ -15,31 +15,42 @@ logger = logging.getLogger(__name__)
 
 EMAIL_FUNCTION_URL = os.environ.get("EMAIL_FUNCTION_URL")
 
+print(f"DEBUG: EMAIL_FUNCTION_URL = {EMAIL_FUNCTION_URL}")
+
 if not EMAIL_FUNCTION_URL:
+    print("DEBUG: EMAIL_FUNCTION_URL environment variable is not set")
     logger.error("EMAIL_FUNCTION_URL environment variable is not set")
     raise EnvironmentError("Missing required environment variable: EMAIL_FUNCTION_URL")
 
 @app.post("/api/database")
 async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
     try:
+        print("DEBUG: Entering save_to_database function")
         posts = data.get("posts", [])
+        print(f"DEBUG: Number of posts received: {len(posts)}")
         logger.info(f"Received data to save to database. Number of posts: {len(posts)}")
         logger.debug(f"Received data: {json.dumps(posts, indent=2)}")
 
         if not isinstance(posts, list):
+            print(f"DEBUG: Invalid posts data type: {type(posts)}")
             raise HTTPException(status_code=422, detail=f"Expected a list of posts, but received {type(posts)}")
 
         new_posts = await save_to_firestore(posts)
+        print(f"DEBUG: Number of new posts saved: {len(new_posts)}")
         logger.info(f"Saved {len(new_posts)} new posts to database")
         
         # Send email notifications for new posts
         for post in new_posts:
+            print(f"DEBUG: Sending email notification for post: {post.get('post_link')}")
             await send_email_notification(post)
         
         return {"new_posts": new_posts}
     except HTTPException as he:
+        print(f"DEBUG: HTTPException in save_to_database: {str(he)}")
         raise he
     except Exception as e:
+        print(f"DEBUG: Unexpected error in save_to_database: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         logger.error(f"Error saving to database: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
@@ -47,6 +58,7 @@ async def save_to_database(data: Dict[str, List[Dict[str, Any]]] = Body(...)):
 async def save_to_firestore(posts: List[Dict[str, Any]]):
     new_posts = []
     try:
+        print(f"DEBUG: Entering save_to_firestore function with {len(posts)} posts")
         for post in posts:
             post_link = post.get('post_link')
             if post_link:
@@ -54,21 +66,27 @@ async def save_to_firestore(posts: List[Dict[str, Any]]):
                 doc_ref = db.collection('posts').document(doc_id)
                 doc = doc_ref.get()
                 if not doc.exists:
+                    print(f"DEBUG: Saving new post: {post_link}")
                     doc_ref.set(post)
                     new_posts.append(post)
                     logger.info(f"Saved new post: {post_link}")
                 else:
+                    print(f"DEBUG: Post already exists, skipping: {post_link}")
                     logger.info(f"Post already exists, skipping: {post_link}")
             else:
+                print(f"DEBUG: Skipping post without post_link: {post}")
                 logger.warning(f"Skipping post without post_link: {post}")
         return new_posts
     except Exception as e:
+        print(f"DEBUG: Error in save_to_firestore: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         logger.error(f"Error in save_to_firestore: {str(e)}")
         logger.error(traceback.format_exc())
         raise
 
 async def send_email_notification(post: Dict[str, Any]):
     try:
+        print(f"DEBUG: Sending email notification for post: {post.get('post_link')}")
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 EMAIL_FUNCTION_URL,
@@ -76,8 +94,10 @@ async def send_email_notification(post: Dict[str, Any]):
                 timeout=30.0
             )
             response.raise_for_status()
+            print(f"DEBUG: Email notification sent successfully for post: {post.get('post_link')}")
             logger.info(f"Email notification sent for post: {post.get('post_link')}")
     except Exception as e:
+        print(f"DEBUG: Failed to send email notification: {str(e)}")
         logger.error(f"Failed to send email notification: {str(e)}")
         # We don't want to raise an exception here, as it would stop the database function
         # Instead, we log the error and continue
@@ -91,6 +111,7 @@ load_dotenv()
 
 def initialize_firebase():
     try:
+        print("DEBUG: Initializing Firebase")
         if not firebase_admin._apps:
             cred_dict = {
                 "type": os.environ.get("FIREBASE_TYPE"),
@@ -106,18 +127,24 @@ def initialize_firebase():
                 "universe_domain": os.environ.get("FIREBASE_UNIVERSE_DOMAIN")
             }
             
+            print("DEBUG: Firebase credentials loaded from environment variables")
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
         
         db = firestore.client()
+        print("DEBUG: Firebase initialized successfully")
         logger.info("Firebase initialized successfully")
         return db
     except Exception as e:
+        print(f"DEBUG: Failed to initialize Firebase: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         logger.error(f"Failed to initialize Firebase: {str(e)}")
         raise
 
 # Initialize Firebase when this module is imported
+print("DEBUG: About to initialize Firebase")
 db = initialize_firebase()
+print("DEBUG: Firebase initialization complete")
 
 if __name__ == "__main__":
     import uvicorn
