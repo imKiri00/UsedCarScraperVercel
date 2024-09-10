@@ -15,7 +15,7 @@ class EmailRequest(BaseModel):
     subject: str
     car_info: dict
 
-@app.post("/api/send_email")
+@app.post("/api/email")
 async def send_email_endpoint(email_request: EmailRequest):
     return await send_email(email_request)
 
