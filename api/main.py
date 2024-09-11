@@ -23,6 +23,8 @@ if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL]):
 async def send_to_database(extracted_posts):
     try:
         print(f"DEBUG: Attempting to send {len(extracted_posts)} posts to database")
+
+        print(extracted_posts)
         try:
             async with httpx.AsyncClient() as client:
                 print(f"DEBUG: Sending {len(extracted_posts)} posts to database function")
