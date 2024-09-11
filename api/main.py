@@ -24,12 +24,11 @@ async def send_to_database(extracted_posts):
     try:
         print(f"DEBUG: Attempting to send {len(extracted_posts)} posts to database")
 
-        print(extracted_posts)
         try:
             async with httpx.AsyncClient() as client:
                 print(f"DEBUG: Sending {len(extracted_posts)} posts to database function")
                 print(f"DEBUG: DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
-                response = await client.post(DATABASE_FUNCTION_URL, json={"posts": extracted_posts}, timeout=None)
+                response = await client.post(DATABASE_FUNCTION_URL, json={"posts": extracted_posts})
                 print(f"DEBUG: Database function response status code: {response.status_code}")
                 print(f"DEBUG: Database function response content: {response.text}")
                 response.raise_for_status()
