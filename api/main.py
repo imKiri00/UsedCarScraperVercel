@@ -10,29 +10,34 @@ app = FastAPI()
 
 # Use environment variables for service URLs without default values
 SCRAPER_FUNCTION_URL = os.environ.get("SCRAPER_FUNCTION_URL")
-DATABASE_FUNCTION_URL = os.environ.get("DATABASE_FUNCTION_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 print(f"DEBUG: SCRAPER_FUNCTION_URL = {SCRAPER_FUNCTION_URL}")
-print(f"DEBUG: DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
+print(f"DEBUG: DATABASE_URL = {DATABASE_URL}")
 
 # Check if environment variables are set
-if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL]):
-    print(f"DEBUG: Missing environment variables. SCRAPER_FUNCTION_URL = {SCRAPER_FUNCTION_URL}, DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
+if not all([SCRAPER_FUNCTION_URL, DATABASE_URL]):
+    print(f"DEBUG: Missing environment variables. SCRAPER_FUNCTION_URL = {SCRAPER_FUNCTION_URL}, DATABASE_URL = {DATABASE_URL}")
     raise EnvironmentError("Missing required environment variables")
 
 async def send_to_database(extracted_posts):
     try:
         print(f"DEBUG: Attempting to send {len(extracted_posts)} posts to database")
 
+        headers = {"Content-Type": "application/json"}
+        data = {
+            "posts": extracted_posts
+        }
+
         try:
             async with httpx.AsyncClient() as client:
-                print(f"DEBUG: Sending {len(extracted_posts)} posts to database function")
-                print(f"DEBUG: DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
-                response = await client.post(DATABASE_FUNCTION_URL, json={"posts": extracted_posts})
-                print(f"DEBUG: Database function response status code: {response.status_code}")
-                print(f"DEBUG: Database function response content: {response.text}")
+                print(f"DEBUG: Sending {len(extracted_posts)} posts to database")
+                print(f"DEBUG: DATABASE_URL = {DATABASE_URL}")
+                response = await client.post(DATABASE_URL, headers=headers, data=json.dumps(data))
+                print(f"DEBUG: Database response status code: {response.status_code}")
+                print(f"DEBUG: Database response content: {response.text}")
                 response.raise_for_status()
-                print("DEBUG: Data sent to database function successfully")
+                print("DEBUG: Data sent to database successfully")
         except Exception as e:
             print(f"DEBUG: Unexpected error: {str(e)}")
             print(f"DEBUG: Traceback: {traceback.format_exc()}")
