@@ -23,14 +23,18 @@ if not all([SCRAPER_FUNCTION_URL, DATABASE_FUNCTION_URL]):
 async def send_to_database(extracted_posts):
     try:
         print(f"DEBUG: Attempting to send {len(extracted_posts)} posts to database")
-        async with httpx.AsyncClient() as client:
-            print(f"DEBUG: Sending {len(extracted_posts)} posts to database function")
-            print(f"DEBUG: DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
-            response = await client.post(DATABASE_FUNCTION_URL, json={"posts": extracted_posts}, timeout=None)
-            print(f"DEBUG: Database function response status code: {response.status_code}")
-            print(f"DEBUG: Database function response content: {response.text}")
-            response.raise_for_status()
-            print("DEBUG: Data sent to database function successfully")
+        try:
+            async with httpx.AsyncClient() as client:
+                print(f"DEBUG: Sending {len(extracted_posts)} posts to database function")
+                print(f"DEBUG: DATABASE_FUNCTION_URL = {DATABASE_FUNCTION_URL}")
+                response = await client.post(DATABASE_FUNCTION_URL, json={"posts": extracted_posts}, timeout=None)
+                print(f"DEBUG: Database function response status code: {response.status_code}")
+                print(f"DEBUG: Database function response content: {response.text}")
+                response.raise_for_status()
+                print("DEBUG: Data sent to database function successfully")
+        except Exception as e:
+            print(f"DEBUG: Unexpected error: {str(e)}")
+            print(f"DEBUG: Traceback: {traceback.format_exc()}")
     except Exception as e:
         print(f"DEBUG: Error sending data to database: {str(e)}")
         print(f"DEBUG: Traceback: {traceback.format_exc()}")
